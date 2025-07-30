@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'rental_screen.dart';
+import 'rental_option_sheet.dart';
 import 'profile_screen.dart';
 import 'dart:async';
 
@@ -113,10 +113,17 @@ class _MapScreenState extends State<MapScreen> {
 
     showModalBottomSheet(
       context: context,
-      builder: (_) => RentalScreen(
+      builder: (_) => RentalOptionSheet(
         carName: car['name'],
         pricePerMinute: car['pricePerMinute'],
         pricePerDay: car['pricePerDay'],
+        onStartRental: () {
+          // Тут можно сделать навигацию на новый экран или начать аренду
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Аренда ${car['name']} начата!')),
+          );
+        },
       ),
     );
   }
