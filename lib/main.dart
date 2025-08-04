@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
-import 'screens/registration_screen.dart';
+import 'package:provider/provider.dart';
+import 'theme/theme_notifier.dart';
+import 'services/auth_start_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -10,10 +17,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Car Sharing Demo',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const RegisterScreen(),
+    return Consumer<ThemeNotifier>(
+      builder: (_, themeNotifier, __) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: themeNotifier.currentTheme,
+          home: const AuthStartScreen(),
+        );
+      },
     );
   }
 }

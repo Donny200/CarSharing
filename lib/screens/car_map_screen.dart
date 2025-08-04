@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:carsharing/screens/payment_history_screen.dart';
+import 'package:carsharing/screens/payment_screen.dart';
+import 'package:carsharing/screens/settings_screen.dart';
+import 'package:carsharing/services/user_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'rental_option_sheet.dart';
-import 'profile_screen.dart';
 
-//email, gender, phoneNumber, app"HAYDA", password, lastName, firstName
+import 'rental_option_sheet.dart';
+import 'user_profile_screen.dart.dart';
 
 class CarMapScreen extends StatefulWidget {
   const CarMapScreen({super.key});
@@ -18,6 +21,7 @@ class CarMapScreen extends StatefulWidget {
 }
 
 class _CarMapScreenState extends State<CarMapScreen> {
+  Map<String, dynamic>? _currentCar;
   final MapController _mapController = MapController();
   LatLng? _currentLocation;
   List<LatLng> _route = [];
@@ -29,13 +33,13 @@ class _CarMapScreenState extends State<CarMapScreen> {
   final List<Map<String, dynamic>> _cars = [
     {
       'name': 'Chevrolet Cobalt',
-      'location': const LatLng(41.302, 69.241),
+      'location': LatLng(41.302, 69.241),
       'pricePerMinute': 120,
       'pricePerDay': 70000,
     },
     {
       'name': 'Malibu Turbo',
-      'location': const LatLng(41.305, 69.244),
+      'location': LatLng(41.305, 69.244),
       'pricePerMinute': 150,
       'pricePerDay': 90000,
     },
@@ -48,22 +52,25 @@ class _CarMapScreenState extends State<CarMapScreen> {
   }
 
   Future<void> _determinePosition() async {
-    final perm = await Geolocator.requestPermission();
-    if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return;
-    final pos = await Geolocator.getCurrentPosition();
-    setState(() => _currentLocation = LatLng(pos.latitude, pos.longitude));
+    final permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
+
+    final position = await Geolocator.getCurrentPosition();
+    setState(() => _currentLocation = LatLng(position.latitude, position.longitude));
   }
 
   Future<void> _fetchRoute(LatLng carLoc) async {
     if (_currentLocation == null) return;
+
     final start = '${_currentLocation!.longitude},${_currentLocation!.latitude}';
     final end = '${carLoc.longitude},${carLoc.latitude}';
     final url = Uri.parse('https://router.project-osrm.org/route/v1/driving/$start;$end?overview=full&geometries=geojson');
-    final resp = await http.get(url);
-    if (resp.statusCode == 200) {
-      final data = jsonDecode(resp.body);
-      final coords = data['routes'][0]['geometry']['coordinates'] as List;
-      final points = coords.map((p) => LatLng(p[1], p[0])).toList();
+
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final coordinates = data['routes'][0]['geometry']['coordinates'] as List;
+      final points = coordinates.map((p) => LatLng(p[1], p[0])).toList();
       setState(() => _route = points);
     }
   }
@@ -71,7 +78,7 @@ class _CarMapScreenState extends State<CarMapScreen> {
   void _showCarActions(Map<String, dynamic> car) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
+      builder: (_) => Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -106,7 +113,11 @@ class _CarMapScreenState extends State<CarMapScreen> {
         carName: car['name'],
         pricePerMinute: car['pricePerMinute'],
         pricePerDay: car['pricePerDay'],
-        onStartRental: _startRental,
+        onStartRental: () {
+          _currentCar = car;
+          _startRental();
+        },
+
       ),
     );
   }
@@ -116,9 +127,17 @@ class _CarMapScreenState extends State<CarMapScreen> {
       _isRenting = true;
       _rentalSeconds = 0;
     });
-    _rentalTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _rentalSeconds++);
+
+    _rentalTimer = Timer.periodic(const Duration(seconds: 60), (_) async {
+      if (_currentCar != null) {
+        await UserDataService.deductFromBalance(_currentCar!['pricePerMinute']);
+      }
+      setState(() {
+        _rentalSeconds += 60;
+      });
     });
+
+
     Navigator.of(context).pop();
   }
 
@@ -139,18 +158,70 @@ class _CarMapScreenState extends State<CarMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Карта машин'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+
+      // Добавь в Scaffold
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            FutureBuilder<int>(
+              future: UserDataService.getBalance(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const DrawerHeader(
+                    decoration: BoxDecoration(color: Colors.blueGrey),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return DrawerHeader(
+                  decoration: const BoxDecoration(color: Colors.blueGrey),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Профиль', style: TextStyle(color: Colors.white, fontSize: 24)),
+                      const SizedBox(height: 10),
+                      Text('Баланс: ${snapshot.data} сум', style: const TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
-        ],
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Профиль'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfileScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Настройки'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.payment),
+              title: const Text('Оплата'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('История оплат'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentHistoryScreen()));
+              },
+            ),
+          ],
+        ),
+      ),
+
+    appBar: AppBar(
+        title: const Text('Карта машин'),
       ),
       body: _currentLocation == null
           ? const Center(child: CircularProgressIndicator())
@@ -170,7 +241,11 @@ class _CarMapScreenState extends State<CarMapScreen> {
               if (_route.isNotEmpty)
                 PolylineLayer(
                   polylines: [
-                    Polyline(points: _route, color: Colors.green, strokeWidth: 5),
+                    Polyline(
+                      points: _route,
+                      color: Colors.green,
+                      strokeWidth: 5,
+                    ),
                   ],
                 ),
               MarkerLayer(
@@ -218,7 +293,9 @@ class _CarMapScreenState extends State<CarMapScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          if (_currentLocation != null) _mapController.move(_currentLocation!, 15.0);
+          if (_currentLocation != null) {
+            _mapController.move(_currentLocation!, 15.0);
+          }
         },
         child: const Icon(Icons.my_location),
       ),
