@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:carsharing/screens/car_map_screen.dart';
 import 'package:carsharing/services/register_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthStartScreen extends StatefulWidget {
   const AuthStartScreen({super.key});
@@ -30,14 +31,13 @@ class _AuthStartScreenState extends State<AuthStartScreen> {
     setState(() => isLoading = true);
 
     try {
-      // Используем ngrok-туннель для подключения к серверу
-      final url = Uri.parse('https://053c2a07ed73.ngrok-free.app/auth/signin-byemail');
+      final url = Uri.parse('https://e62ec121a076.ngrok-free.app/auth/signin-byemail');
       debugPrint('Отправка запроса на $url');
 
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
+        body: jsonEncode({'email': email, 'password': password, 'phoneNumber': ''}),
       ).timeout(const Duration(seconds: 10), onTimeout: () {
         throw Exception('Время ожидания истекло. Проверьте соединение.');
       });
@@ -45,14 +45,25 @@ class _AuthStartScreenState extends State<AuthStartScreen> {
       debugPrint('Статус ответа: ${response.statusCode}');
       debugPrint('Тело ответа: ${response.body}');
 
-      if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+
+      if (response.statusCode == 200 && data['accessToken'] != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('accessToken', data['accessToken']); // сохраняем токен
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const CarMapScreen()),
         );
-      } else if (response.statusCode == 403 || response.statusCode == 404) {
+      }
+      else if (response.statusCode == 403 || response.statusCode == 401) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Пользователь не найден. Зарегистрируйтесь.')),
+          const SnackBar(content: Text('Неверный email или пароль')),
+        );
+      } else if (response.statusCode == 404) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Пользователь не найден')),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -69,12 +80,14 @@ class _AuthStartScreenState extends State<AuthStartScreen> {
     }
   }
 
+
   void _navigateToRegister() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => RegisterScreen(email: emailController.text)),
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

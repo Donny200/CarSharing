@@ -202,6 +202,7 @@ class _CarMapScreenState extends State<CarMapScreen> {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
               },
             ),
+
             ListTile(
               leading: const Icon(Icons.payment),
               title: const Text('Оплата'),

@@ -4,11 +4,13 @@
     <!-- ✅ Разрешения всегда ВНЕ application -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="carsharing"
+
+        android:label="Hayda"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/launch_background">
 
         <activity
             android:name=".MainActivity"
@@ -20,7 +22,6 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <uses-permission android:name="android.permission.INTERNET"/>
 
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
@@ -31,6 +32,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
 
         <!-- ✅ API ключ Google Maps -->
         <meta-data

@@ -9,13 +9,21 @@ class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key, required this.email});
 
   Future<bool> login(String phone, String password) async {
-    final url = Uri.parse('http://053c2a07ed73.ngrok-free.app/auth/signin');
+    final url = Uri.parse('https://e62ec121a076.ngrok-free.app/auth/signin');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'phoneNumber': phone, 'password': password}),
     );
-    return response.statusCode == 200;
+
+    if (response.statusCode == 200) {
+      return true;
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      // Неверный пароль или неавторизован
+      return false;
+    } else {
+      throw Exception('Ошибка сервера: ${response.statusCode}');
+    }
   }
 
   @override
@@ -47,14 +55,24 @@ class LoginScreen extends StatelessWidget {
                   phoneController.text.trim(),
                   passwordController.text.trim(),
                 );
-                if (success) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CarMapScreen()),
+                try {
+                  final success = await login(
+                    phoneController.text.trim(),
+                    passwordController.text.trim(),
                   );
-                } else {
+                  if (success) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CarMapScreen()),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Неверный номер телефона или пароль')),
+                    );
+                  }
+                } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Неверные данные')),
+                    SnackBar(content: Text('Ошибка: ${e.toString()}')),
                   );
                 }
               },
