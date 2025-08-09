@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:carsharing/screens/activation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:provider/provider.dart';
+import '../services/localization_service.dart';
+import '../screens/activation_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,9 +22,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final lastNameController = TextEditingController();
   final phoneController = TextEditingController();
   final birthDateController = TextEditingController();
-  String gender = 'Мужчина';
+  String gender = 'Male';
 
   static const String baseUrl = 'https://e62ec121a076.ngrok-free.app';
+  bool isLoading = false;
 
   Future<bool> register() async {
     try {
@@ -36,11 +38,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'password': passwordController.text.trim(),
         'phoneNumber': phoneController.text.trim(),
         'birthDate': birthDateController.text.trim(),
-        'gender': gender == 'Мужчина' ? 'Male' : 'Female',
+        'gender': gender,
         'app': 'HAYDA',
       };
-
-      debugPrint('Отправка запроса на $url с данными: $body');
 
       final response = await http.post(
         url,
@@ -66,7 +66,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-
   Future<void> _selectDate() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -84,8 +83,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = Provider.of<LocalizationService>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Регистрация')),
+      appBar: AppBar(title: Text(loc.tr('register'))),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -94,76 +94,77 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               TextFormField(
                 controller: emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: InputDecoration(labelText: loc.tr('email')),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Введите email' : null,
+                validator: (value) => value == null || value.isEmpty ? loc.tr('fill_email') : null,
               ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: phoneController,
-                decoration: const InputDecoration(labelText: 'Телефон'),
+                decoration: InputDecoration(labelText: loc.tr('phone')),
                 keyboardType: TextInputType.phone,
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Введите телефон' : null,
+                validator: (value) => value == null || value.isEmpty ? loc.tr('fill_phone') : null,
               ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: firstNameController,
-                decoration: const InputDecoration(labelText: 'Имя'),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Введите имя' : null,
+                decoration: InputDecoration(labelText: loc.tr('first_name')),
+                validator: (value) => value == null || value.isEmpty ? loc.tr('fill_name') : null,
               ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: lastNameController,
-                decoration: const InputDecoration(labelText: 'Фамилия'),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Введите фамилию' : null,
+                decoration: InputDecoration(labelText: loc.tr('last_name')),
+                validator: (value) => value == null || value.isEmpty ? loc.tr('fill_lastname') : null,
               ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: birthDateController,
-                decoration: const InputDecoration(labelText: 'Дата рождения'),
+                decoration: InputDecoration(labelText: loc.tr('birth_date')),
                 readOnly: true,
                 onTap: _selectDate,
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Выберите дату рождения' : null,
+                validator: (value) => value == null || value.isEmpty ? loc.tr('choose_birthdate') : null,
               ),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: gender,
-                items: const [
-                  DropdownMenuItem(value: 'Мужчина', child: Text('Мужчина')),
-                  DropdownMenuItem(value: 'Женщина', child: Text('Женщина')),
+                value: gender == 'Male' ? loc.tr('male') : loc.tr('female'),
+                items: [
+                  DropdownMenuItem(value: loc.tr('male'), child: Text(loc.tr('male'))),
+                  DropdownMenuItem(value: loc.tr('female'), child: Text(loc.tr('female'))),
                 ],
-                onChanged: (value) =>
-                    setState(() => gender = value ?? 'Мужчина'),
-                decoration: const InputDecoration(labelText: 'Пол'),
+                onChanged: (value) => setState(() => gender = value == loc.tr('male') ? 'Male' : 'Female'),
+                decoration: InputDecoration(labelText: loc.tr('select_language')),
               ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Пароль'),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Введите пароль' : null,
+                decoration: InputDecoration(labelText: loc.tr('password')),
+                validator: (value) => value == null || value.isEmpty ? loc.tr('fill_password') : null,
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  if (formKey.currentState!.validate()) {
-                    final success = await register();
-                    if (success) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ActivationScreen(
-                              email: emailController.text.trim()),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Ошибка регистрации')),
-                      );
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                    if (formKey.currentState!.validate()) {
+                      setState(() => isLoading = true);
+                      final success = await register();
+                      setState(() => isLoading = false);
+                      if (success) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => ActivationScreen(email: emailController.text.trim())),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.tr('registration_error'))));
+                      }
                     }
-                  }
-                },
-                child: const Text('Зарегистрироваться'),
+                  },
+                  child: isLoading ? const CircularProgressIndicator(color: Colors.white) : Text(loc.tr('register')),
+                ),
               ),
             ],
           ),

@@ -9,9 +9,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:provider/provider.dart';
+import '../services/localization_service.dart';
+import '../widgets/language_button.dart';
 import 'rental_option_sheet.dart';
-import 'user_profile_screen.dart.dart';
+import 'user_profile_screen.dart';
 
 class CarMapScreen extends StatefulWidget {
   const CarMapScreen({super.key});
@@ -90,14 +92,14 @@ class _CarMapScreenState extends State<CarMapScreen> {
                 Navigator.pop(context);
                 _fetchRoute(car['location']);
               },
-              child: const Text('Показать маршрут'),
+              child: Consumer<LocalizationService>(builder: (c, loc, _) => Text(loc.tr('show_route'))),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
                 _showRentalSheet(car);
               },
-              child: const Text('Арендовать'),
+              child: Consumer<LocalizationService>(builder: (c, loc, _) => Text(loc.tr('rent'))),
             ),
           ],
         ),
@@ -117,7 +119,6 @@ class _CarMapScreenState extends State<CarMapScreen> {
           _currentCar = car;
           _startRental();
         },
-
       ),
     );
   }
@@ -128,15 +129,15 @@ class _CarMapScreenState extends State<CarMapScreen> {
       _rentalSeconds = 0;
     });
 
-    _rentalTimer = Timer.periodic(const Duration(seconds: 60), (_) async {
-      if (_currentCar != null) {
+    _rentalTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      // списание каждую минуту
+      if (_rentalSeconds % 60 == 0 && _currentCar != null && _rentalSeconds != 0) {
         await UserDataService.deductFromBalance(_currentCar!['pricePerMinute']);
       }
       setState(() {
-        _rentalSeconds += 60;
+        _rentalSeconds += 1;
       });
     });
-
 
     Navigator.of(context).pop();
   }
@@ -158,10 +159,8 @@ class _CarMapScreenState extends State<CarMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-
+    final loc = Provider.of<LocalizationService>(context);
     return Scaffold(
-
-      // Добавь в Scaffold
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -180,9 +179,9 @@ class _CarMapScreenState extends State<CarMapScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Профиль', style: TextStyle(color: Colors.white, fontSize: 24)),
+                      Text(loc.tr('profile'), style: const TextStyle(color: Colors.white, fontSize: 24)),
                       const SizedBox(height: 10),
-                      Text('Баланс: ${snapshot.data} сум', style: const TextStyle(color: Colors.white)),
+                      Text('${loc.tr('amount')}: ${snapshot.data} сум', style: const TextStyle(color: Colors.white)),
                     ],
                   ),
                 );
@@ -190,29 +189,28 @@ class _CarMapScreenState extends State<CarMapScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.person),
-              title: const Text('Профиль'),
+              title: Text(loc.tr('profile')),
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfileScreen()));
               },
             ),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: const Text('Настройки'),
+              title: Text(loc.tr('settings')),
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
               },
             ),
-
             ListTile(
               leading: const Icon(Icons.payment),
-              title: const Text('Оплата'),
+              title: Text(loc.tr('payment')),
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentScreen()));
               },
             ),
             ListTile(
               leading: const Icon(Icons.history),
-              title: const Text('История оплат'),
+              title: Text(loc.tr('payment_history')),
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentHistoryScreen()));
               },
@@ -220,9 +218,9 @@ class _CarMapScreenState extends State<CarMapScreen> {
           ],
         ),
       ),
-
-    appBar: AppBar(
-        title: const Text('Карта машин'),
+      appBar: AppBar(
+        title: Text(loc.tr('cars_map')),
+        actions: const [LanguageButton()],
       ),
       body: _currentLocation == null
           ? const Center(child: CircularProgressIndicator())
@@ -230,10 +228,7 @@ class _CarMapScreenState extends State<CarMapScreen> {
         children: [
           FlutterMap(
             mapController: _mapController,
-            options: MapOptions(
-              center: _currentLocation,
-              zoom: 15.0,
-            ),
+            options: MapOptions(center: _currentLocation, zoom: 15.0),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -242,21 +237,18 @@ class _CarMapScreenState extends State<CarMapScreen> {
               if (_route.isNotEmpty)
                 PolylineLayer(
                   polylines: [
-                    Polyline(
-                      points: _route,
-                      color: Colors.green,
-                      strokeWidth: 5,
-                    ),
+                    Polyline(points: _route, color: Colors.green, strokeWidth: 5),
                   ],
                 ),
               MarkerLayer(
                 markers: [
-                  Marker(
-                    point: _currentLocation!,
-                    width: 40,
-                    height: 40,
-                    child: const Icon(Icons.person_pin_circle, color: Colors.blue, size: 40),
-                  ),
+                  if (_currentLocation != null)
+                    Marker(
+                      point: _currentLocation!,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(Icons.person_pin_circle, color: Colors.blue, size: 40),
+                    ),
                   ..._cars.map((car) => Marker(
                     point: car['location'],
                     width: 40,
@@ -278,14 +270,20 @@ class _CarMapScreenState extends State<CarMapScreen> {
               child: Column(
                 children: [
                   Text(
-                    'Время аренды: ${_rentalSeconds ~/ 60} мин ${_rentalSeconds % 60} сек',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    loc.tr('rent_time', {
+                      'min': ((_rentalSeconds) ~/ 60).toString(),
+                      'sec': ((_rentalSeconds) % 60).toString()
+                    }),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _stopRental,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    child: const Text('Завершить аренду'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _stopRental,
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      child: Text(loc.tr('end_rental')),
+                    ),
                   ),
                 ],
               ),

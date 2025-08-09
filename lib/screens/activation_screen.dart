@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:carsharing/screens/car_map_screen.dart';
+import 'package:provider/provider.dart';
+import '../services/localization_service.dart';
+import 'car_map_screen.dart';
 
 class ActivationScreen extends StatefulWidget {
   final String email;
@@ -37,9 +39,11 @@ class _ActivationScreenState extends State<ActivationScreen> {
 
       debugPrint('Ответ сервера: ${response.statusCode} ${response.body}');
 
+      final loc = Provider.of<LocalizationService>(context, listen: false);
+
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Аккаунт успешно активирован')),
+          SnackBar(content: Text(loc.tr('account_activated'))),
         );
         Navigator.pushReplacement(
           context,
@@ -47,13 +51,14 @@ class _ActivationScreenState extends State<ActivationScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Неверный код активации')),
+          SnackBar(content: Text(loc.tr('invalid_code'))),
         );
       }
     } catch (e) {
       debugPrint('Ошибка активации: $e');
+      final loc = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ошибка соединения с сервером')),
+        SnackBar(content: Text(loc.tr('connection_error'))),
       );
     } finally {
       setState(() => isLoading = false);
@@ -62,25 +67,32 @@ class _ActivationScreenState extends State<ActivationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = Provider.of<LocalizationService>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Активация аккаунта')),
+      appBar: AppBar(
+        title: Text(loc.tr('activate_account')),
+        actions: const [Padding(padding: EdgeInsets.only(right: 8), child: SizedBox(height: 0, child: null))],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text('Код был отправлен на: ${widget.email}'),
+            Text(loc.tr('code_sent_to', {'email': widget.email})),
             const SizedBox(height: 20),
             TextField(
               controller: codeController,
-              decoration: const InputDecoration(labelText: 'Код активации'),
+              decoration: InputDecoration(labelText: loc.tr('activation_code')),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isLoading ? null : activateAccount,
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Подтвердить'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : activateAccount,
+                child: isLoading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Text(loc.tr('confirm')),
+              ),
             ),
           ],
         ),

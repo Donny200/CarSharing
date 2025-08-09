@@ -1,12 +1,23 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:carsharing/screens/car_map_screen.dart';
+import 'package:provider/provider.dart';
+import '../services/localization_service.dart';
+import '../screens/car_map_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   final String email;
 
   const LoginScreen({super.key, required this.email});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final passwordController = TextEditingController();
+  final phoneController = TextEditingController();
+  bool isLoading = false;
 
   Future<bool> login(String phone, String password) async {
     final url = Uri.parse('https://e62ec121a076.ngrok-free.app/auth/signin');
@@ -19,7 +30,6 @@ class LoginScreen extends StatelessWidget {
     if (response.statusCode == 200) {
       return true;
     } else if (response.statusCode == 401 || response.statusCode == 403) {
-      // Неверный пароль или неавторизован
       return false;
     } else {
       throw Exception('Ошибка сервера: ${response.statusCode}');
@@ -28,55 +38,49 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final passwordController = TextEditingController();
-    final phoneController = TextEditingController();
-
+    final loc = Provider.of<LocalizationService>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Вход')),
+      appBar: AppBar(title: Text(loc.tr('login_or_register'))),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text('Email: $email'),
+            Text('${loc.tr('email')}: ${widget.email}'),
+            const SizedBox(height: 12),
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Телефон'),
+              decoration: InputDecoration(labelText: loc.tr('phone')),
             ),
+            const SizedBox(height: 8),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Пароль'),
+              decoration: InputDecoration(labelText: loc.tr('password')),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                final success = await login(
-                  phoneController.text.trim(),
-                  passwordController.text.trim(),
-                );
-                try {
-                  final success = await login(
-                    phoneController.text.trim(),
-                    passwordController.text.trim(),
-                  );
-                  if (success) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CarMapScreen()),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Неверный номер телефона или пароль')),
-                    );
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                  setState(() => isLoading = true);
+                  try {
+                    final success = await login(phoneController.text.trim(), passwordController.text.trim());
+                    if (success) {
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const CarMapScreen()));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.tr('invalid_credentials'))));
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${loc.tr('signin_error')}: $e')));
+                  } finally {
+                    setState(() => isLoading = false);
                   }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Ошибка: ${e.toString()}')),
-                  );
-                }
-              },
-              child: const Text('Войти'),
+                },
+                child: isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Войти'),
+              ),
             ),
           ],
         ),

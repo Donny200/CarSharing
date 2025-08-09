@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:carsharing/theme/theme_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../services/auth_start_screen.dart'; // Импорт экрана авторизации
+import '../services/localization_service.dart';
+import '../theme/theme_notifier.dart';
+import '../services/auth_start_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -12,7 +12,6 @@ class SettingsScreen extends StatelessWidget {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('accessToken');
 
-    // Переход на экран входа без возможности возврата назад
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const AuthStartScreen()),
@@ -23,29 +22,31 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final loc = Provider.of<LocalizationService>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Настройки')),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SwitchListTile(
-            title: const Text('Тёмная тема'),
-            value: themeNotifier.isDark,
-            onChanged: (_) => themeNotifier.toggleTheme(),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: ElevatedButton.icon(
-              onPressed: () => _logout(context),
-              icon: const Icon(Icons.logout),
-              label: const Text('Выйти из аккаунта'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
+      appBar: AppBar(title: Text(loc.tr('settings')), actions: const []),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile(
+              title: Text(loc.tr('dark_theme')),
+              value: themeNotifier.isDark,
+              onChanged: (_) => themeNotifier.toggleTheme(),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _logout(context),
+                icon: const Icon(Icons.logout),
+                label: Text(loc.tr('logout')),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

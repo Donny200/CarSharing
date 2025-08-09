@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/localization_service.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -30,9 +32,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _fetchProfile() async {
     try {
       final token = await _getToken();
-      if (token == null) {
-        throw Exception('Токен не найден. Авторизуйтесь снова.');
-      }
+      if (token == null) throw Exception('Token not found');
 
       final response = await http.get(
         Uri.parse('$baseUrl/profile/get'),
@@ -46,16 +46,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final profile = data is Map<String, dynamic> && data.containsKey('data')
-            ? data['data']
-            : data;
-
+        final profile = data is Map<String, dynamic> && data.containsKey('data') ? data['data'] : data;
         setState(() {
           profileData = profile;
           _loading = false;
         });
       } else {
-        throw Exception('Ошибка загрузки профиля: ${response.statusCode}');
+        throw Exception('Ошибка ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Ошибка: $e');
@@ -75,27 +72,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = Provider.of<LocalizationService>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Профиль')),
+      appBar: AppBar(title: Text(loc.tr('profile'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            _buildProfileItem('Имя', profileData['firstName']),
-            _buildProfileItem('Фамилия', profileData['lastName']),
-            _buildProfileItem('Никнейм', profileData['username']),
-            _buildProfileItem('Email', profileData['email']),
-            _buildProfileItem('Телефон', profileData['phoneNumber']),
-            _buildProfileItem('Дата рождения', profileData['birthDate']),
-            _buildProfileItem(
-                'Пол',
-                profileData['gender'] == 'Male'
-                    ? 'Мужчина'
-                    : profileData['gender'] == 'Female'
-                    ? 'Женщина'
-                    : profileData['gender']),
+            _buildProfileItem(loc.tr('first_name'), profileData['firstName']),
+            _buildProfileItem(loc.tr('last_name'), profileData['lastName']),
+            _buildProfileItem('Username', profileData['username']),
+            _buildProfileItem(loc.tr('email'), profileData['email']),
+            _buildProfileItem(loc.tr('phone'), profileData['phoneNumber']),
+            _buildProfileItem(loc.tr('birth_date'), profileData['birthDate']),
+            _buildProfileItem('Gender', profileData['gender']),
           ],
         ),
       ),

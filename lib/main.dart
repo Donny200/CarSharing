@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'theme/theme_notifier.dart';
+import 'services/localization_service.dart';
 import 'services/auth_start_screen.dart';
 import 'screens/car_map_screen.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeNotifier()),
+        ChangeNotifierProvider(create: (_) => LocalizationService()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -22,37 +27,33 @@ class MyApp extends StatelessWidget {
     final token = prefs.getString('accessToken');
 
     if (token != null && token.isNotEmpty) {
-      return const CarMapScreen(); // пользователь уже вошёл
+      return const CarMapScreen();
     } else {
-      return const AuthStartScreen(); // требует входа
+      return const AuthStartScreen();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeNotifier>(
-      builder: (_, themeNotifier, __) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: themeNotifier.currentTheme,
-          home: FutureBuilder<Widget>(
-            future: _getStartScreen(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              } else if (snapshot.hasError) {
-                return const Scaffold(
-                  body: Center(child: Text('Ошибка при загрузке')),
-                );
-              } else {
-                return snapshot.data!;
-              }
-            },
-          ),
-        );
-      },
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final loc = Provider.of<LocalizationService>(context);
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: loc.tr('app_title'),
+      theme: themeNotifier.currentTheme,
+      home: FutureBuilder<Widget>(
+        future: _getStartScreen(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          } else if (snapshot.hasError) {
+            return Scaffold(body: Center(child: Text(snapshot.error.toString())));
+          } else {
+            return snapshot.data!;
+          }
+        },
+      ),
     );
   }
 }

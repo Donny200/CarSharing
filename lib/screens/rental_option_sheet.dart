@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/localization_service.dart';
 
 class RentalOptionSheet extends StatefulWidget {
   final String carName;
@@ -23,6 +25,7 @@ class _RentalOptionSheetState extends State<RentalOptionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = Provider.of<LocalizationService>(context);
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -31,13 +34,13 @@ class _RentalOptionSheetState extends State<RentalOptionSheet> {
           Text(widget.carName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           RadioListTile<String>(
-            title: Text('₸ ${widget.pricePerMinute} / минута'),
+            title: Text(loc.tr('minute_price', {'price': widget.pricePerMinute.toString()})),
             value: 'minute',
             groupValue: selectedTariff,
             onChanged: (value) => setState(() => selectedTariff = value),
           ),
           RadioListTile<String>(
-            title: Text('₸ ${widget.pricePerDay} / сутки'),
+            title: Text(loc.tr('day_price', {'price': widget.pricePerDay.toString()})),
             value: 'day',
             groupValue: selectedTariff,
             onChanged: (value) => setState(() => selectedTariff = value),
@@ -46,7 +49,7 @@ class _RentalOptionSheetState extends State<RentalOptionSheet> {
           ElevatedButton.icon(
             onPressed: selectedTariff != null ? widget.onStartRental : null,
             icon: const Icon(Icons.play_arrow),
-            label: const Text('Старт'),
+            label: Text(loc.tr('start')),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
           ),
         ],
