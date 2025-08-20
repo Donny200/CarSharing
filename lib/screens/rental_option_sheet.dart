@@ -26,31 +26,47 @@ class _RentalOptionSheetState extends State<RentalOptionSheet> {
   @override
   Widget build(BuildContext context) {
     final loc = Provider.of<LocalizationService>(context);
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24.0),
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: Colors.white,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.carName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
+          Text(widget.carName, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
           RadioListTile<String>(
-            title: Text(loc.tr('minute_price', {'price': widget.pricePerMinute.toString()})),
+            title: Text(loc.tr('minute_price', {'price': widget.pricePerMinute.toString()}), style: theme.textTheme.bodyLarge),
             value: 'minute',
             groupValue: selectedTariff,
             onChanged: (value) => setState(() => selectedTariff = value),
+            activeColor: Colors.teal,
           ),
           RadioListTile<String>(
-            title: Text(loc.tr('day_price', {'price': widget.pricePerDay.toString()})),
+            title: Text(loc.tr('day_price', {'price': widget.pricePerDay.toString()}), style: theme.textTheme.bodyLarge),
             value: 'day',
             groupValue: selectedTariff,
             onChanged: (value) => setState(() => selectedTariff = value),
+            activeColor: Colors.teal,
           ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: selectedTariff != null ? widget.onStartRental : null,
-            icon: const Icon(Icons.play_arrow),
-            label: Text(loc.tr('start')),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: selectedTariff != null ? widget.onStartRental : null,
+              icon: const Icon(Icons.play_arrow),
+              label: Text(loc.tr('start'), style: const TextStyle(fontSize: 18)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 5,
+              ),
+            ),
           ),
         ],
       ),

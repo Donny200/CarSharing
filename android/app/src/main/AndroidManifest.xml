@@ -8,6 +8,7 @@
 
     <application
 
+        android:enableOnBackInvokedCallback="true"
         android:label="Hayda"
         android:name="${applicationName}"
         android:icon="@drawable/launch_background">

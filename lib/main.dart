@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'theme/theme_notifier.dart';
 import 'services/localization_service.dart';
@@ -48,7 +49,7 @@ class MyApp extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(body: Center(child: CircularProgressIndicator()));
           } else if (snapshot.hasError) {
-            return Scaffold(body: Center(child: Text(snapshot.error.toString())));
+            return Scaffold(body: Center(child: Text(snapshot.error.toString(), style: GoogleFonts.roboto())));
           } else {
             return snapshot.data!;
           }

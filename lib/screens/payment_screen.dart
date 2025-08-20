@@ -21,37 +21,53 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = Provider.of<LocalizationService>(context);
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(loc.tr('payment'))),
+      appBar: AppBar(
+        title: Text(loc.tr('payment'), style: theme.textTheme.headlineMedium),
+        backgroundColor: theme.primaryColor,
+        elevation: 0,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(loc.tr('choose_amount')),
-            const SizedBox(height: 12),
+            Text(loc.tr('choose_amount'), style: theme.textTheme.titleLarge),
+            const SizedBox(height: 16),
             Wrap(
-              spacing: 10,
+              spacing: 12,
+              runSpacing: 12,
               children: [
                 for (var amount in [5000, 10000, 15000])
                   ChoiceChip(
-                    label: Text('$amount сум'),
+                    label: Text('$amount сум', style: const TextStyle(fontWeight: FontWeight.bold)),
                     selected: selectedAmount == amount,
                     onSelected: (_) {
                       setState(() => selectedAmount = amount);
                       goToMethodsScreen(amount);
                     },
+                    backgroundColor: Colors.grey[200],
+                    selectedColor: Colors.teal,
+                    labelStyle: TextStyle(color: selectedAmount == amount ? Colors.white : Colors.black),
                   ),
               ],
             ),
-            const SizedBox(height: 20),
-            Text(loc.tr('or_enter_amount')),
-            const SizedBox(height: 8),
+            const SizedBox(height: 32),
+            Text(loc.tr('or_enter_amount'), style: theme.textTheme.titleLarge),
+            const SizedBox(height: 12),
             TextField(
               controller: customAmountController,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(hintText: '8000'),
+              decoration: InputDecoration(
+                hintText: '8000',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(Icons.attach_money),
+                filled: true,
+                fillColor: theme.inputDecorationTheme.fillColor,
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -61,7 +77,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     goToMethodsScreen(entered);
                   }
                 },
-                child: Text(loc.tr('continue')),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 5,
+                ),
+                child: Text(loc.tr('continue'), style: const TextStyle(fontSize: 18)),
               ),
             ),
           ],

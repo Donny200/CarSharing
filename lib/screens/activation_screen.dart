@@ -18,7 +18,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
   final codeController = TextEditingController();
   bool isLoading = false;
 
-  static const String baseUrl = 'https://e62ec121a076.ngrok-free.app';
+  static const String baseUrl = 'https://we-uh-finishing-latest.trycloudflare.com';
 
   Future<void> activateAccount() async {
     setState(() => isLoading = true);
@@ -68,31 +68,47 @@ class _ActivationScreenState extends State<ActivationScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = Provider.of<LocalizationService>(context);
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.tr('activate_account')),
-        actions: const [Padding(padding: EdgeInsets.only(right: 8), child: SizedBox(height: 0, child: null))],
+        title: Text(loc.tr('activate_account'), style: theme.textTheme.headlineMedium),
+        backgroundColor: theme.primaryColor,
+        elevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(loc.tr('code_sent_to', {'email': widget.email})),
-            const SizedBox(height: 20),
+            Text(
+              loc.tr('code_sent_to', {'email': widget.email}),
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
             TextField(
               controller: codeController,
-              decoration: InputDecoration(labelText: loc.tr('activation_code')),
+              decoration: InputDecoration(
+                labelText: loc.tr('activation_code'),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(Icons.lock_outline),
+                filled: true,
+                fillColor: theme.inputDecorationTheme.fillColor,
+              ),
               keyboardType: TextInputType.number,
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : activateAccount,
-                child: isLoading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(loc.tr('confirm')),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: isLoading ? null : activateAccount,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 5,
               ),
+              child: isLoading
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : Text(loc.tr('confirm'), style: const TextStyle(fontSize: 18)),
             ),
           ],
         ),

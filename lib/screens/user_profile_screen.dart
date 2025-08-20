@@ -16,7 +16,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _loading = true;
   Map<String, dynamic> profileData = {};
 
-  static const String baseUrl = 'https://e62ec121a076.ngrok-free.app';
+  static const String baseUrl = 'https://low-lauren-contest-del.trycloudflare.com';
 
   @override
   void initState() {
@@ -61,11 +61,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildProfileItem(String title, String? value) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Text(
-        '$title: ${value ?? ''}',
-        style: const TextStyle(fontSize: 18),
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('$title:', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text(value ?? '', style: theme.textTheme.bodyLarge),
+        ],
       ),
     );
   }
@@ -73,22 +77,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = Provider.of<LocalizationService>(context);
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(loc.tr('profile'))),
+      appBar: AppBar(
+        title: Text(loc.tr('profile'), style: theme.textTheme.headlineMedium),
+        backgroundColor: theme.primaryColor,
+        elevation: 0,
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            _buildProfileItem(loc.tr('first_name'), profileData['firstName']),
-            _buildProfileItem(loc.tr('last_name'), profileData['lastName']),
-            _buildProfileItem('Username', profileData['username']),
-            _buildProfileItem(loc.tr('email'), profileData['email']),
-            _buildProfileItem(loc.tr('phone'), profileData['phoneNumber']),
-            _buildProfileItem(loc.tr('birth_date'), profileData['birthDate']),
-            _buildProfileItem('Gender', profileData['gender']),
-          ],
+        padding: const EdgeInsets.all(24.0),
+        child: Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView(
+              children: [
+                _buildProfileItem(loc.tr('first_name'), profileData['firstName']),
+                _buildProfileItem(loc.tr('last_name'), profileData['lastName']),
+                _buildProfileItem('Username', profileData['username']),
+                _buildProfileItem(loc.tr('email'), profileData['email']),
+                _buildProfileItem(loc.tr('phone'), profileData['phoneNumber']),
+                _buildProfileItem(loc.tr('birth_date'), profileData['birthDate']),
+                _buildProfileItem('Gender', profileData['gender']),
+              ],
+            ),
+          ),
         ),
       ),
     );

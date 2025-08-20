@@ -1,4 +1,3 @@
-// lib/widgets/language_button.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/localization_service.dart';
@@ -13,7 +12,7 @@ class LanguageButton extends StatelessWidget {
       builder: (menuContext) {
         return PopupMenuButton<String>(
           tooltip: 'Language',
-          icon: const Icon(Icons.language),
+          icon: const Icon(Icons.language, color: Colors.white),
           onSelected: (value) {
             // Берём сервис без подписки — безопасно
             final loc = Provider.of<LocalizationService>(context, listen: false);
