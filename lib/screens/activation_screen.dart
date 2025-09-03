@@ -18,7 +18,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
   final codeController = TextEditingController();
   bool isLoading = false;
 
-  static const String baseUrl = 'https://we-uh-finishing-latest.trycloudflare.com';
+  static const String baseUrl = 'https://coated-novelty-observer-coupon.trycloudflare.com';
 
   Future<void> activateAccount() async {
     setState(() => isLoading = true);
@@ -70,47 +70,67 @@ class _ActivationScreenState extends State<ActivationScreen> {
     final loc = Provider.of<LocalizationService>(context);
     final theme = Theme.of(context);
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(loc.tr('activate_account'), style: theme.textTheme.headlineMedium),
-        backgroundColor: theme.primaryColor,
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              loc.tr('code_sent_to', {'email': widget.email}),
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [theme.primaryColor.withOpacity(0.8), Colors.white],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AnimatedOpacity(
+                  opacity: isLoading ? 0.5 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    loc.tr('code_sent_to', {'email': widget.email}),
+                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                TextField(
+                  controller: codeController,
+                  decoration: InputDecoration(
+                    labelText: loc.tr('activation_code'),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.9),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 24),
+                Hero(
+                  tag: 'confirm_button',
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : activateAccount,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      elevation: 10,
+                      shadowColor: theme.primaryColor.withOpacity(0.5),
+                    ),
+                    child: isLoading
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(loc.tr('confirm'), style: const TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 32),
-            TextField(
-              controller: codeController,
-              decoration: InputDecoration(
-                labelText: loc.tr('activation_code'),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.lock_outline),
-                filled: true,
-                fillColor: theme.inputDecorationTheme.fillColor,
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: isLoading ? null : activateAccount,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 5,
-              ),
-              child: isLoading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(loc.tr('confirm'), style: const TextStyle(fontSize: 18)),
-            ),
-          ],
+          ),
         ),
       ),
     );

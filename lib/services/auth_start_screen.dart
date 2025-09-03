@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:carsharing/services/auth_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -33,7 +34,7 @@ class _AuthStartScreenState extends State<AuthStartScreen> {
     setState(() => isLoading = true);
 
     try {
-      final url = Uri.parse('https://we-uh-finishing-latest.trycloudflare.com/auth/signin-byemail');
+      final url = Uri.parse('https://norway-org-newark-sizes.trycloudflare.com/auth/signin-byemail');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -45,8 +46,7 @@ class _AuthStartScreenState extends State<AuthStartScreen> {
       final data = jsonDecode(response.body ?? '{}');
 
       if (response.statusCode == 200 && data['accessToken'] != null) {
-        await _secureStorage.write(key: 'accessToken', value: data['accessToken']);
-        debugPrint('Token stored in secure storage: ${data['accessToken']}');
+        await AuthStorage().saveToken(data['accessToken'] as String);  // <-- сохраняем
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const CarMapScreen()));
       } else if (response.statusCode == 403 || response.statusCode == 401) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.tr('invalid_credentials'))));
@@ -72,58 +72,79 @@ class _AuthStartScreenState extends State<AuthStartScreen> {
     final loc = Provider.of<LocalizationService>(context);
     final theme = Theme.of(context);
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(loc.tr('login_or_register'), style: theme.textTheme.headlineMedium),
-        backgroundColor: theme.primaryColor,
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: loc.tr('email'),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.email_outlined),
-                filled: true,
-                fillColor: theme.inputDecorationTheme.fillColor,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: loc.tr('password'),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.lock_outline),
-                filled: true,
-                fillColor: theme.inputDecorationTheme.fillColor,
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : _loginOrRegister,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 5,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [theme.primaryColor.withOpacity(0.8), Colors.white],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedOpacity(
+                  opacity: isLoading ? 0.5 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: loc.tr('email'),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
                 ),
-                child: isLoading ? const CircularProgressIndicator(color: Colors.white) : Text(loc.tr('continue'), style: const TextStyle(fontSize: 18)),
-              ),
+                const SizedBox(height: 16),
+                AnimatedOpacity(
+                  opacity: isLoading ? 0.5 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: loc.tr('password'),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Hero(
+                  tag: 'login_button',
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _loginOrRegister,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      elevation: 10,
+                      shadowColor: theme.primaryColor.withOpacity(0.5),
+                    ),
+                    child: isLoading ? const CircularProgressIndicator(color: Colors.white) : Text(loc.tr('continue'), style: const TextStyle(fontSize: 18)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: _navigateToRegister,
+                  child: Text(loc.tr('no_account'), style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: _navigateToRegister,
-              child: Text(loc.tr('no_account'), style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
-            ),
-          ],
+          ),
         ),
       ),
     );

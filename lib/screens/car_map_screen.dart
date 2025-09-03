@@ -4,6 +4,7 @@ import 'package:carsharing/screens/payment_history_screen.dart';
 import 'package:carsharing/screens/payment_screen.dart';
 import 'package:carsharing/screens/settings_screen.dart';
 import 'package:carsharing/services/auth_start_screen.dart';
+import 'package:carsharing/services/auth_storage.dart';
 import 'package:carsharing/services/user_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -26,6 +27,7 @@ class CarMapScreen extends StatefulWidget {
 }
 
 class _CarMapScreenState extends State<CarMapScreen> {
+  final _auth = AuthStorage();
 
   final MapController _mapController = MapController();
 
@@ -45,8 +47,9 @@ class _CarMapScreenState extends State<CarMapScreen> {
   DateTime? _walletLastUpdated;
 
 
-  static const String carsUrl = 'https://ddede65e4d59.ngrok-free.app/admin/get-all-cars';
-  static const String walletUrl = 'https://hockey-jill-shoulder-psp.trycloudflare.com/wallet/my-wallet';
+  static const String carsUrl = 'https://lowest-ingredients-canal-tuner.trycloudflare.com/users/get-all-available-cars';  // Убрал пробел
+  static const String walletUrl = 'https://pixels-gorgeous-ad-bold.trycloudflare.com/wallet/my-wallet';
+  static const String baseUrl = 'https://pixels-gorgeous-ad-bold.trycloudflare.com';  // Для новых запросов, как open-doors
 
   final _secureStorage = const FlutterSecureStorage();
 
@@ -54,8 +57,7 @@ class _CarMapScreenState extends State<CarMapScreen> {
   @override
   void initState() {
     super.initState();
-
-    _secureStorage.read(key: 'accessToken').then((token) async {
+    _auth.readToken().then((token) async {
       if (token == null) {
         debugPrint('Нет токена — на экран авторизации');
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuthStartScreen()));
@@ -76,7 +78,7 @@ class _CarMapScreenState extends State<CarMapScreen> {
   Future<void> _fetchWallet() async {
     setState(() => _loadingBalance = true);
     try {
-      final token = await _secureStorage.read(key: 'accessToken');
+      final token = await _auth.readToken();  // <-- Изменено на AuthStorage
       if (token == null) {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuthStartScreen()));
         return;
@@ -205,7 +207,7 @@ class _CarMapScreenState extends State<CarMapScreen> {
     setState(() => _loadingCars = true);
 
     try {
-      final String? token = await _secureStorage.read(key: 'accessToken');
+      final String? token = await _auth.readToken();  // <-- Изменено на AuthStorage
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ошибка: Токен авторизации не найден')),
@@ -225,6 +227,8 @@ class _CarMapScreenState extends State<CarMapScreen> {
           .timeout(const Duration(seconds: 12));
 
       debugPrint('Cars status: ${res.statusCode}');
+      debugPrint('Cars body: ${res.body}');  // Добавлен дебаг body для проверки
+
       if (res.statusCode == 200) {
         final jsonBody = jsonDecode(res.body);
         List<dynamic> list;
@@ -252,7 +256,7 @@ class _CarMapScreenState extends State<CarMapScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ошибка авторизации. Пожалуйста, войдите снова.')),
         );
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuthStartScreen()));
+        // Убрано перенаправление
       } else {
         final bodyPreview = res.body.length > 200 ? '${res.body.substring(0, 200)}...' : res.body;
         debugPrint('Ошибка загрузки машин: ${res.statusCode} $bodyPreview');
@@ -559,7 +563,7 @@ class _CarMapScreenState extends State<CarMapScreen> {
         return;
       }
 
-      final url = Uri.parse('https://hockey-jill-shoulder-psp.trycloudflare.com/book/start?carId=5');
+      final url = Uri.parse('https://pixels-gorgeous-ad-bold.trycloudflare.com/book/start?carId=5');
       final res = await http.post(
         url,
         headers: {
@@ -609,6 +613,42 @@ class _CarMapScreenState extends State<CarMapScreen> {
     );
   }
 
+  Future<void> _openDoors() async {
+    try {
+      final token = await _secureStorage.read(key: 'accessToken');
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ошибка: нет токена авторизации')),
+        );
+        return;
+      }
+
+      final url = Uri.parse('$baseUrl/car/open-doors?carId=5');  // Замените carId на реальный, если нужно
+      final res = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 12));
+
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Двери открыты')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка открытия дверей: ${res.statusCode}')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Ошибка открытия дверей: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось открыть двери')),
+      );
+    }
+  }
+
   void _stopRental() {
     _rentalTimer?.cancel();
     setState(() {
@@ -638,13 +678,23 @@ class _CarMapScreenState extends State<CarMapScreen> {
                 children: [
                   Text(loc.tr('profile'), style: theme.textTheme.headlineMedium?.copyWith(color: Colors.white)),
                   const SizedBox(height: 16),
-                  if (_loadingBalance)
-                    const SizedBox(height: 28, width: 28, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  else
-                    Text(
-                      _formatWalletBalance(loc),
-                      style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (_loadingBalance)
+                        const SizedBox(height: 28, width: 28, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      else
+                        Text(
+                          _formatWalletBalance(loc),
+                          style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        onPressed: _fetchWallet,
+                        tooltip: 'Обновить баланс',
+                      ),
+                    ],
+                  ),
                   if (_walletLastUpdated != null) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -761,18 +811,33 @@ class _CarMapScreenState extends State<CarMapScreen> {
                         style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.stop),
-                          label: Text(loc.tr('end_rental')),
-                          onPressed: _stopRental,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.lock_open),
+                            label: const Text('Открыть двери'),
+                            onPressed: _openDoors,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
                           ),
-                        ),
+                          SizedBox(
+                            width: 150,  // Ограничим ширину для кнопки завершения
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.stop),
+                              label: Text(loc.tr('end_rental')),
+                              onPressed: _stopRental,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

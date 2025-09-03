@@ -25,21 +25,41 @@ class PaymentMethodsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = Provider.of<LocalizationService>(context);
+    final theme = Theme.of(context);
     final methods = ['Click', 'Payme', 'Hazna'];
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.tr('select_payment_method'))),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: methods.map((method) {
-          return Card(
-            child: ListTile(
-              leading: const Icon(Icons.payment),
-              title: Text(method),
-              onTap: () => _processPayment(context, method),
-            ),
-          );
-        }).toList(),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text(loc.tr('select_payment_method'), style: theme.textTheme.headlineMedium),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [theme.primaryColor.withOpacity(0.8), theme.colorScheme.background],
+          ),
+        ),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(24.0),
+            children: methods.map((method) {
+              return Card(
+                elevation: 6,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                child: ListTile(
+                  leading: const Icon(Icons.payment, color: Colors.teal, size: 32),
+                  title: Text(method, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () => _processPayment(context, method),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }

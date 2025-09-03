@@ -29,9 +29,13 @@ class _RentalOptionSheetState extends State<RentalOptionSheet> {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(24.0),
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        color: Colors.white,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.white, Colors.grey[100]!],
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -63,8 +67,9 @@ class _RentalOptionSheetState extends State<RentalOptionSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 5,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                elevation: 10,
+                shadowColor: Colors.green.withOpacity(0.5),
               ),
             ),
           ),

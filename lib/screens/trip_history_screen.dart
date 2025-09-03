@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:carsharing/services/auth_storage.dart';  // Добавь импорт
 
 class TripHistoryScreen extends StatefulWidget {
   const TripHistoryScreen({super.key});
@@ -17,7 +18,7 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
   List<dynamic> _trips = [];
 
   // Если на сервере другой базовый URL — поправь здесь
-  static const String baseUrl = 'https://we-uh-finishing-latest.trycloudflare.com';
+  static const String baseUrl = 'https://pixels-gorgeous-ad-bold.trycloudflare.com';
 
   @override
   void initState() {
@@ -26,8 +27,7 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
   }
 
   Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('accessToken');
+    return await AuthStorage().readToken();  // <-- Изменено на secure storage
   }
 
   Future<void> _loadHistory() async {
@@ -37,7 +37,7 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
-      final url = Uri.parse('$baseUrl/trip/history'); // заглушка — реализуй на backend
+      final url = Uri.parse('$baseUrl/book/get-by-user'); // заглушка — реализуй на backend
       final res = await http.get(url, headers: headers).timeout(const Duration(seconds: 10));
 
       if (res.statusCode == 200) {

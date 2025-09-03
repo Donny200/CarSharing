@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:carsharing/services/auth_storage.dart';  // Добавь импорт
+
 import '../services/localization_service.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -16,7 +18,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _loading = true;
   Map<String, dynamic> profileData = {};
 
-  static const String baseUrl = 'https://low-lauren-contest-del.trycloudflare.com';
+  static const String baseUrl = 'https://norway-org-newark-sizes.trycloudflare.com';
 
   @override
   void initState() {
@@ -25,8 +27,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('accessToken');
+    return await AuthStorage().readToken();  // <-- Изменено на secure storage
   }
 
   Future<void> _fetchProfile() async {
@@ -68,7 +69,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('$title:', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          Text(value ?? '', style: theme.textTheme.bodyLarge),
+          Flexible(
+            child: Text(
+              value ?? '',
+              style: theme.textTheme.bodyLarge,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+            ),
+          ),
         ],
       ),
     );
